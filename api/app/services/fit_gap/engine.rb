@@ -52,7 +52,7 @@ module FitGap
             result = 'not_assessed'
           else
             delta  = candidate_level - expected_level
-            result = 'gap' # INTENTIONAL BUG FOR FAULT TEST
+            result = delta == 0 ? 'match' : (delta > 0 ? 'exceed' : 'gap')
           end
         else
           candidate_level = nil
