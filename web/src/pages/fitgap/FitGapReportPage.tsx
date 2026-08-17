@@ -22,11 +22,13 @@ export default function FitGapReportPage() {
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState<"pdf" | "json" | null>(null);
   const [regenerating, setRegenerating] = useState(false);
 
   const fetchReport = useCallback(async () => {
     if (!portfolio) return;
+    setError(null);
     try {
       const res = await portfoliosApi.getFitGap(portfolio.id, Number(vacancyId));
       setReport(res.data.report);
@@ -36,9 +38,13 @@ export default function FitGapReportPage() {
         try {
           await portfoliosApi.triggerFitGap(portfolio.id, Number(vacancyId));
           setGenerating(true);
-        } catch {
+        } catch (err: any) {
           setGenerating(false);
+          setError(err?.response?.data?.message || "Failed to trigger report generation.");
         }
+      } else {
+        setGenerating(false);
+        setError(e?.response?.data?.message || "An unexpected error occurred while fetching the report.");
       }
     }
   }, [portfolio, vacancyId]);
@@ -64,10 +70,13 @@ export default function FitGapReportPage() {
   const handleRegenerate = async () => {
     if (!portfolio) return;
     setRegenerating(true);
+    setError(null);
     try {
       await portfoliosApi.regenerateFitGap(portfolio.id, Number(vacancyId));
       setReport(null);
       setGenerating(true);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to regenerate report.");
     } finally {
       setRegenerating(false);
     }
@@ -140,8 +149,17 @@ export default function FitGapReportPage() {
         )}
       </div>
 
+      {/* Error state */}
+      {error && (
+        <div className="border border-destructive/50 bg-destructive/10 rounded-lg p-6 text-center space-y-3">
+          <div className="text-destructive font-medium">Failed to load report</div>
+          <p className="text-sm text-muted-foreground">{error}</p>
+          <Button variant="outline" size="sm" onClick={fetchReport}>Try Again</Button>
+        </div>
+      )}
+
       {/* Generating */}
-      {generating && (
+      {generating && !error && (
         <div className="border rounded-lg p-12 text-center space-y-3">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
           <p className="text-sm text-muted-foreground">Generating fit/gap report...</p>
