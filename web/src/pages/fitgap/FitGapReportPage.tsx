@@ -49,7 +49,9 @@ export default function FitGapReportPage() {
     }
   }, [portfolio, vacancyId]);
 
-  useEffect(() => {
+  const fetchPortfolio = useCallback(() => {
+    setError(null);
+    setLoading(true);
     sessionsApi
       .getPortfolio(Number(sessionId))
       .then(async (res) => {
@@ -58,7 +60,26 @@ export default function FitGapReportPage() {
           setPortfolio(data.portfolio);
         }
       })
+      .catch((err: any) => {
+        setError(
+          err?.response?.data?.message ||
+            "Failed to connect to the server. Please check your connection and try again."
+        );
+      })
       .finally(() => setLoading(false));
+  }, [sessionId]);
+
+  const handleRetry = useCallback(() => {
+    if (!portfolio) {
+      fetchPortfolio();
+    } else {
+      fetchReport();
+    }
+  }, [portfolio, fetchPortfolio, fetchReport]);
+
+  useEffect(() => {
+    fetchPortfolio();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
   useEffect(() => {
@@ -154,7 +175,7 @@ export default function FitGapReportPage() {
         <div className="border border-destructive/50 bg-destructive/10 rounded-lg p-6 text-center space-y-3">
           <div className="text-destructive font-medium">Failed to load report</div>
           <p className="text-sm text-muted-foreground">{error}</p>
-          <Button variant="outline" size="sm" onClick={fetchReport}>Try Again</Button>
+          <Button variant="outline" size="sm" onClick={handleRetry}>Try Again</Button>
         </div>
       )}
 
